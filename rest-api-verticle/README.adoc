@@ -1,0 +1,16 @@
+= Vert.x Messaging Sample - REST API Verticle project
+
+This project is a REST API that can be invoked by external sources. The message will emit several
+events on the Vert.x EventBus. The events will be processed asynchronously. To prevent a blocking
+API from running forever, the invoking API will return an ID that can be used to check the status
+and results.
+
+= REST API
+
+== POST /api/:type
+Send a REST API to run logic against a particular type. An event will be emitted to process this type.
+Returns an ID to check the status/results.
+
+== GET /api/:id
+Retrieve the current status for the given ID. If the process has completed, then the results will
+be included as well.
