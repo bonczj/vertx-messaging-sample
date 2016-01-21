@@ -7,8 +7,6 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -16,13 +14,14 @@ import io.vertx.ext.web.handler.BodyHandler;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 /**
  * Entry point for the REST APIs.
  */
 public class RestApiVerticle extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(RestApiVerticle.class);
+    private static final Logger logger = Logger.getLogger(RestApiVerticle.class.getSimpleName());
 
     private Map<UUID, Result> resultsCache;
 
@@ -60,11 +59,14 @@ public class RestApiVerticle extends AbstractVerticle
 
         EventBus eventBus = getVertx().eventBus();
         eventBus.send("message.handle", output, messageAsyncResult -> {
+            logger.info(String.format("Reply sent back as %s", String.valueOf(messageAsyncResult.succeeded())));
+
             if (messageAsyncResult.succeeded())
             {
                 Result messageResult = Json.decodeValue((String)messageAsyncResult.result().body(), Result.class);
                 if (getResultsCache().containsKey(messageResult.getId()))
                 {
+                    logger.info(String.format("Stored result %d in cache", messageResult.getId()));
                     getResultsCache().put(messageResult.getId(), messageResult);
                 }
             }

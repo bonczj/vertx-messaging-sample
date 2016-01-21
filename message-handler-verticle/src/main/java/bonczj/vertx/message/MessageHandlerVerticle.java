@@ -6,14 +6,13 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 import java.util.Random;
+import java.util.logging.Logger;
 
 public class MessageHandlerVerticle extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(MessageHandlerVerticle.class);
+    private static final Logger logger = Logger.getLogger(MessageHandlerVerticle.class.getSimpleName());
 
     @Override public void start() throws Exception
     {
@@ -25,21 +24,28 @@ public class MessageHandlerVerticle extends AbstractVerticle
             JsonObject object = (JsonObject) objectMessage.body();
             Result result = Json.decodeValue(object.encode(), Result.class);
             logger.info(String.format("Processing message %s", result.getId().toString()));
-            int seconds = 0;
 
-            try
+            Random random = new Random();
+            int seconds = random.nextInt(9) + 1;
+
+            for (int i = 0; i < seconds; i++)
             {
-                Random random = new Random();
-                seconds = random.nextInt(9) + 1;
-                Thread.sleep(seconds * 1000);
-            }
-            catch (InterruptedException e)
-            {
-                // do nothing
+                try
+                {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException e)
+                {
+                    // do nothing
+                }
             }
 
             result.setStatus(Status.COMPLETED);
-            result.setResult(String.format("Message complete in %d seconds!", seconds));
+            result.setResult(String.format("Message complete in %f seconds!", seconds / 100.0f));
+            logger.info(String.format("Message %s complete in %f seconds", result.getId(), seconds / 100.0f));
+
+            object = new JsonObject(Json.encode(result));
+            objectMessage.reply(object);
         });
     }
 }
