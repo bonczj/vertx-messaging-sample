@@ -29,19 +29,19 @@ public class MessageHandlerVerticle extends AbstractVerticle
             int seconds = random.nextInt(20) + 1;
 
             // Thread.sleep is blocking, so allow vertx to handle it cleaner than normal.
-            getVertx().executeBlocking(objectFuture -> {
+            getVertx().executeBlocking(future -> {
                 try
                 {
                     Thread.sleep(seconds * 1000);
                 }
                 catch (InterruptedException e)
                 {
-                    objectFuture.fail(e);
+                    future.fail(e);
                 }
 
-                objectFuture.complete();
-            }, objectAsyncResult -> {
-                if (objectAsyncResult.succeeded())
+                future.complete();
+            }, res -> {
+                if (res.succeeded())
                 {
                     result.setStatus(Status.COMPLETED);
                     result.setResult(String.format("Message complete in %d seconds!", seconds));
