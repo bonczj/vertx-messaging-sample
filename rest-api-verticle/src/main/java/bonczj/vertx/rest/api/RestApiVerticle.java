@@ -35,7 +35,24 @@ public class RestApiVerticle extends AbstractVerticle
         router.post("/api/:type").handler(this::handleAddType);
         router.get("/api/result/:id").handler(this::handleGetId);
 
-        vertx.createHttpServer().requestHandler(router::accept).listen(8080);
+        getVertx().createHttpServer().requestHandler(router::accept).listen(8080);
+
+        getVertx().eventBus().consumer("result.message.handle", objectMessage -> {
+            logger.info("Received new message on queue message.handle.result");
+            JsonObject object = (JsonObject) objectMessage.body();
+            Result result = Json.decodeValue(object.encode(), Result.class);
+            logger.info(String.format("Processing result %s", result.getId()));
+
+            if (getResultsCache().containsKey(result.getId()))
+            {
+                getResultsCache().put(result.getId(), result);
+                logger.info(String.format("Stored result %d in cache", result.getId()));
+            }
+            else
+            {
+                logger.severe(String.format("Failed to find result %d in cache", result.getId()));
+            }
+        });
     }
 
     protected void handleAddType(RoutingContext context)
@@ -58,19 +75,7 @@ public class RestApiVerticle extends AbstractVerticle
         logger.info(String.format("Sending message on event bus for result '%s'", result.getId().toString()));
 
         EventBus eventBus = getVertx().eventBus();
-        eventBus.send("message.handle", output, messageAsyncResult -> {
-            logger.info(String.format("Reply sent back as %s", String.valueOf(messageAsyncResult.succeeded())));
-
-            if (messageAsyncResult.succeeded())
-            {
-                Result messageResult = Json.decodeValue((String)messageAsyncResult.result().body(), Result.class);
-                if (getResultsCache().containsKey(messageResult.getId()))
-                {
-                    logger.info(String.format("Stored result %d in cache", messageResult.getId()));
-                    getResultsCache().put(messageResult.getId(), messageResult);
-                }
-            }
-        });
+        eventBus.send("message.handle", output);
     }
 
     protected void handleGetId(RoutingContext context)

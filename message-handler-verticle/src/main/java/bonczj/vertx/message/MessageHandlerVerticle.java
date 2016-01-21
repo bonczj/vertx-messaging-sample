@@ -18,9 +18,7 @@ public class MessageHandlerVerticle extends AbstractVerticle
     {
         super.start();
 
-        EventBus eventBus = getVertx().eventBus();
-
-        eventBus.consumer("message.handle", objectMessage -> {
+        getVertx().eventBus().consumer("message.handle", objectMessage -> {
             JsonObject object = (JsonObject) objectMessage.body();
             Result result = Json.decodeValue(object.encode(), Result.class);
             logger.info(String.format("Processing message %s", result.getId().toString()));
@@ -45,7 +43,9 @@ public class MessageHandlerVerticle extends AbstractVerticle
             logger.info(String.format("Message %s complete in %f seconds", result.getId(), seconds / 100.0f));
 
             object = new JsonObject(Json.encode(result));
-            objectMessage.reply(object);
+
+            getVertx().eventBus().send("result.message.handle", object);
+            logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
         });
     }
 }
