@@ -46,11 +46,11 @@ public class RestApiVerticle extends AbstractVerticle
             if (getResultsCache().containsKey(result.getId()))
             {
                 getResultsCache().put(result.getId(), result);
-                logger.info(String.format("Stored result %d in cache", result.getId()));
+                logger.info(String.format("Stored result %s in cache", result.getId()));
             }
             else
             {
-                logger.severe(String.format("Failed to find result %d in cache", result.getId()));
+                logger.severe(String.format("Failed to find result %s in cache", result.getId()));
             }
         });
     }
