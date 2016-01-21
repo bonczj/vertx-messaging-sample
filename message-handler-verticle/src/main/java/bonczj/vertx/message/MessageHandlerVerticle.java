@@ -3,7 +3,6 @@ package bonczj.vertx.message;
 import bonczj.vertx.models.Result;
 import bonczj.vertx.models.Status;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
@@ -26,26 +25,43 @@ public class MessageHandlerVerticle extends AbstractVerticle
             Random random = new Random();
             int seconds = random.nextInt(9) + 1;
 
-            for (int i = 0; i < seconds; i++)
-            {
+            // Thread.sleep is blocking, so allow vertx to handle it cleaner than normal.
+            getVertx().executeBlocking(objectFuture -> {
                 try
                 {
-                    Thread.sleep(100);
+                    Thread.sleep(seconds * 1000);
                 }
                 catch (InterruptedException e)
                 {
-                    // do nothing
+                    objectFuture.fail(e);
                 }
-            }
 
-            result.setStatus(Status.COMPLETED);
-            result.setResult(String.format("Message complete in %f seconds!", seconds / 100.0f));
-            logger.info(String.format("Message %s complete in %f seconds", result.getId(), seconds / 100.0f));
+                objectFuture.complete();
+            }, objectAsyncResult -> {
+                if (objectAsyncResult.succeeded())
+                {
+                    result.setStatus(Status.COMPLETED);
+                    result.setResult(String.format("Message complete in %d seconds!", seconds));
+                    logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
 
-            object = new JsonObject(Json.encode(result));
+                    JsonObject json = new JsonObject(Json.encode(result));
 
-            getVertx().eventBus().send("result.message.handle", object);
-            logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
+                    getVertx().eventBus().send("result.message.handle", json);
+
+                    logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
+
+                }
+                else
+                {
+                    result.setStatus(Status.FAILED);
+                    result.setResult(String.format("Failed to sleep %d seconds for result %s", seconds, result.getId()));
+                    JsonObject json = new JsonObject(Json.encode(result));
+
+                    getVertx().eventBus().send("result.message.handle", json);
+
+                    logger.severe(result.getResult());
+                }
+            });
         });
     }
 }
