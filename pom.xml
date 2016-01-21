@@ -15,7 +15,9 @@
     </properties>
 
     <modules>
+        <module>common</module>
         <module>rest-api-verticle</module>
+        <module>message-handler-verticle</module>
     </modules>
 
     <build>

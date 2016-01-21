@@ -1,11 +1,14 @@
 package bonczj.vertx.rest.api;
 
-import bonczj.vertx.rest.api.models.Result;
-import bonczj.vertx.rest.api.models.Status;
+import bonczj.vertx.models.Result;
+import bonczj.vertx.models.Status;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -19,6 +22,8 @@ import java.util.UUID;
  */
 public class RestApiVerticle extends AbstractVerticle
 {
+    private static final Logger logger = LoggerFactory.getLogger(RestApiVerticle.class);
+
     private Map<UUID, Result> resultsCache;
 
     @Override public void start() throws Exception
@@ -47,11 +52,23 @@ public class RestApiVerticle extends AbstractVerticle
 
         Result result = new Result(UUID.randomUUID(), Status.QUEUED, null);
 
-        // TODO send event about the new type and object
-
         getResultsCache().put(result.getId(), result);
         JsonObject output = new JsonObject(Json.encode(result));
         response.setStatusCode(200).putHeader("Content-Type", "application/json").end(output.encodePrettily());
+
+        logger.info(String.format("Sending message on event bus for result '%s'", result.getId().toString()));
+
+        EventBus eventBus = getVertx().eventBus();
+        eventBus.send("message.handle", output, messageAsyncResult -> {
+            if (messageAsyncResult.succeeded())
+            {
+                Result messageResult = Json.decodeValue((String)messageAsyncResult.result().body(), Result.class);
+                if (getResultsCache().containsKey(messageResult.getId()))
+                {
+                    getResultsCache().put(messageResult.getId(), messageResult);
+                }
+            }
+        });
     }
 
     protected void handleGetId(RoutingContext context)

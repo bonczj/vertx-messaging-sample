@@ -1,4 +1,4 @@
-package bonczj.vertx.rest.api.models;
+package bonczj.vertx.models;
 
 import java.util.UUID;
 

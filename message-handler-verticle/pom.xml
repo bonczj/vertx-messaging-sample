@@ -11,15 +11,16 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>rest-api-verticle</artifactId>
+    <artifactId>message-handler-verticle</artifactId>
     <packaging>jar</packaging>
 
     <properties>
         <!-- the main verticle class name -->
-        <main.verticle>bonczj.vertx.rest.api.RestApiVerticle</main.verticle>
+        <main.verticle>bonczj.vertx.message.MessageHandlerVerticle</main.verticle>
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>common</artifactId>
