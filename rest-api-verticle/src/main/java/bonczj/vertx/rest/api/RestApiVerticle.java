@@ -38,10 +38,9 @@ public class RestApiVerticle extends AbstractVerticle
         getVertx().createHttpServer().requestHandler(router::accept).listen(8080);
 
         getVertx().eventBus().consumer("result.message.handle", objectMessage -> {
-            logger.info("Received new message on queue message.handle.result");
             JsonObject object = (JsonObject) objectMessage.body();
             Result result = Json.decodeValue(object.encode(), Result.class);
-            logger.info(String.format("Processing result %s", result.getId()));
+            logger.info(String.format("Processing result %s with status %s", result.getId(), result.getStatus()));
 
             if (getResultsCache().containsKey(result.getId()))
             {

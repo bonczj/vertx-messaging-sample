@@ -20,10 +20,13 @@ public class MessageHandlerVerticle extends AbstractVerticle
         getVertx().eventBus().consumer("message.handle", objectMessage -> {
             JsonObject object = (JsonObject) objectMessage.body();
             Result result = Json.decodeValue(object.encode(), Result.class);
+
             logger.info(String.format("Processing message %s", result.getId().toString()));
+            result.setStatus(Status.RUNNING);
+            sendResult(result);
 
             Random random = new Random();
-            int seconds = random.nextInt(9) + 1;
+            int seconds = random.nextInt(20) + 1;
 
             // Thread.sleep is blocking, so allow vertx to handle it cleaner than normal.
             getVertx().executeBlocking(objectFuture -> {
@@ -44,9 +47,7 @@ public class MessageHandlerVerticle extends AbstractVerticle
                     result.setResult(String.format("Message complete in %d seconds!", seconds));
                     logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
 
-                    JsonObject json = new JsonObject(Json.encode(result));
-
-                    getVertx().eventBus().send("result.message.handle", json);
+                    sendResult(result);
 
                     logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
 
@@ -55,13 +56,17 @@ public class MessageHandlerVerticle extends AbstractVerticle
                 {
                     result.setStatus(Status.FAILED);
                     result.setResult(String.format("Failed to sleep %d seconds for result %s", seconds, result.getId()));
-                    JsonObject json = new JsonObject(Json.encode(result));
 
-                    getVertx().eventBus().send("result.message.handle", json);
+                    sendResult(result);
 
                     logger.severe(result.getResult());
                 }
             });
         });
+    }
+
+    private void sendResult(Result result)
+    {
+        getVertx().eventBus().send("result.message.handle", new JsonObject(Json.encode(result)));
     }
 }
