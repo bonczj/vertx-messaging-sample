@@ -14,3 +14,9 @@ Returns an ID to check the status/results.
 == GET /api/:id
 Retrieve the current status for the given ID. If the process has completed, then the results will
 be included as well.
+
+= Events
+
+Each incoming request will queue an object that contains the ID and type onto the event bus. Another
+verticle will process the object (based on type) and compute an answer. The result is then returned
+back to the caller and stored in the results cache.
