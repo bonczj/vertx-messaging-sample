@@ -28,39 +28,14 @@ public class MessageHandlerVerticle extends AbstractVerticle
             Random random = new Random();
             int seconds = random.nextInt(20) + 1;
 
-            // Thread.sleep is blocking, so allow vertx to handle it cleaner than normal.
-            getVertx().executeBlocking(future -> {
-                try
-                {
-                    Thread.sleep(seconds * 1000);
-                }
-                catch (InterruptedException e)
-                {
-                    future.fail(e);
-                }
+            getVertx().setTimer(seconds * 1000, handler -> {
+                result.setStatus(Status.COMPLETED);
+                result.setResult(String.format("Message complete in %d seconds!", seconds));
+                logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
 
-                future.complete();
-            }, res -> {
-                if (res.succeeded())
-                {
-                    result.setStatus(Status.COMPLETED);
-                    result.setResult(String.format("Message complete in %d seconds!", seconds));
-                    logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
+                sendResult(result);
 
-                    sendResult(result);
-
-                    logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
-
-                }
-                else
-                {
-                    result.setStatus(Status.FAILED);
-                    result.setResult(String.format("Failed to sleep %d seconds for result %s", seconds, result.getId()));
-
-                    sendResult(result);
-
-                    logger.severe(result.getResult());
-                }
+                logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
             });
         });
     }
