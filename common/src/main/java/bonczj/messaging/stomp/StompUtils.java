@@ -3,6 +3,9 @@ package bonczj.messaging.stomp;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.stomp.StompClientOptions;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 public class StompUtils
 {
     public static final String RESULTS_QUEUE = "/queue/result.message.handle";
@@ -21,6 +24,15 @@ public class StompUtils
                 setHost(config.getString("stomp.host", "127.0.0.1")).
                 setBypassHostHeader(config.getBoolean("stomp.bypassHostHeader", true)).
                 setUseStompFrame(config.getBoolean("stomp.useStompFrame", false));
+    }
+
+    public static Map<String, String> stompHeaders(JsonObject config)
+    {
+        Map<String, String> headers = new TreeMap<>();
+
+        headers.put("ack", "client-individual");
+
+        return headers;
     }
 
 }

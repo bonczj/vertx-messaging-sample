@@ -33,7 +33,7 @@ public class MessageHandlerVerticle extends AbstractVerticle
                 connection.errorHandler(frame -> logger.severe(String.format("Error receiving Stomp frame from RabbitMQ: %s", frame)));
                 connection.connectionDroppedHandler(frame -> logger.severe(String.format("Dropped Stomp connection from RabbitMQ: %s", frame)));
 
-                connection.subscribe(StompUtils.WORKER_QUEUE, frame -> {
+                connection.subscribe(StompUtils.WORKER_QUEUE, StompUtils.stompHeaders(config()), frame -> {
                     Result result = Json.decodeValue(frame.getBodyAsString(), Result.class);
 
                     logger.info(String.format("Processing message %s", result.getId().toString()));
@@ -50,6 +50,20 @@ public class MessageHandlerVerticle extends AbstractVerticle
                         logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
 
                         sendResult(result, connection);
+
+                        if (null != frame.getAck() && !frame.getAck().trim().isEmpty())
+                        {
+                            if (random.nextBoolean())
+                            {
+                                logger.info(String.format("Sending ack for result %s", result.getId()));
+                                connection.ack(frame.getAck());
+                            }
+                            else
+                            {
+                                logger.info(String.format("Sending nack for result %s", result.getId()));
+                                connection.nack(frame.getAck());
+                            }
+                        }
 
                         logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
                     });

@@ -46,7 +46,7 @@ public class RestApiVerticle extends AbstractVerticle
             {
                 StompClientConnection connection = ar.result();
 
-                connection.subscribe(StompUtils.RESULTS_QUEUE, frame -> {
+                connection.subscribe(StompUtils.RESULTS_QUEUE, StompUtils.stompHeaders(config()), frame -> {
                     Result result = Json.decodeValue(frame.getBodyAsString(), Result.class);
                     logger.info(String.format("Processing result %s with status %s", result.getId(), result.getStatus()));
 
@@ -54,10 +54,20 @@ public class RestApiVerticle extends AbstractVerticle
                     {
                         getResultsCache().put(result.getId(), result);
                         logger.info(String.format("Stored result %s in cache", result.getId()));
+
+                        if (null != frame.getAck() && !frame.getAck().trim().isEmpty())
+                        {
+                            connection.ack(frame.getAck());
+                        }
                     }
                     else
                     {
                         logger.severe(String.format("Failed to find result %s in cache", result.getId()));
+
+                        if (null != frame.getAck() && !frame.getAck().trim().isEmpty())
+                        {
+                            connection.nack(frame.getAck());
+                        }
                     }
                 });
             }
