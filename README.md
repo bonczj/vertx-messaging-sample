@@ -18,6 +18,7 @@ Just build the project using maven. The two verticles are built as a thick jar t
 one to run them directly without needing to have Vert.X installed.
 
   java -jar ./message-handler-verticle/target/message-handler-verticle-0.0.1-SNAPSHOT-fat.jar start
+
   java -jar ./rest-api-verticle/target/rest-api-verticle-0.0.1-SNAPSHOT-fat.jar start
 
 ## rest-api-verticle
@@ -25,6 +26,7 @@ one to run them directly without needing to have Vert.X installed.
 This verticle has two very simple REST APIs.
 
   POST /api/:type
+  
   GET /api/result/:id
 
 The :type can be anything you want. There is no body needed for the POST command. The result
@@ -40,4 +42,4 @@ queue.
 
 This verticle listens for all messages coming in on the queue message.handle (sent by the REST
 verticle). The listener waits for some period of time and then sends an update to the
-result.message.handle. 
+result.message.handle.
