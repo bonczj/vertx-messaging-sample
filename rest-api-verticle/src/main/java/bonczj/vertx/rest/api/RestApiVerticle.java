@@ -1,12 +1,15 @@
 package bonczj.vertx.rest.api;
 
+import bonczj.messaging.stomp.StompUtils;
 import bonczj.vertx.models.Result;
 import bonczj.vertx.models.Status;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.stomp.StompClient;
+import io.vertx.ext.stomp.StompClientConnection;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -24,6 +27,7 @@ public class RestApiVerticle extends AbstractVerticle
     private static final Logger logger = Logger.getLogger(RestApiVerticle.class.getSimpleName());
 
     private Map<UUID, Result> resultsCache;
+    private StompClient stompClient;
 
     @Override public void start() throws Exception
     {
@@ -37,6 +41,7 @@ public class RestApiVerticle extends AbstractVerticle
 
         getVertx().createHttpServer().requestHandler(router::accept).listen(8080);
 
+/*
         getVertx().eventBus().consumer("result.message.handle", objectMessage -> {
             JsonObject object = (JsonObject) objectMessage.body();
             Result result = Json.decodeValue(object.encode(), Result.class);
@@ -52,6 +57,43 @@ public class RestApiVerticle extends AbstractVerticle
                 logger.severe(String.format("Failed to find result %s in cache", result.getId()));
             }
         });
+*/
+
+        this.stompClient = StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
+            if (ar.succeeded())
+            {
+                StompClientConnection connection = ar.result();
+
+                connection.subscribe(StompUtils.RESULTS_QUEUE, frame -> {
+                    Result result = Json.decodeValue(frame.getBodyAsString(), Result.class);
+                    logger.info(String.format("Processing result %s with status %s", result.getId(), result.getStatus()));
+
+                    if (getResultsCache().containsKey(result.getId()))
+                    {
+                        getResultsCache().put(result.getId(), result);
+                        logger.info(String.format("Stored result %s in cache", result.getId()));
+                    }
+                    else
+                    {
+                        logger.severe(String.format("Failed to find result %s in cache", result.getId()));
+                    }
+                });
+            }
+            else
+            {
+                logger.severe(String.format("Failed to connect to stomp server: %s", ar.cause().toString()));
+            }
+        });
+    }
+
+    @Override public void stop() throws Exception
+    {
+        super.stop();
+
+        if (null != this.stompClient)
+        {
+            this.stompClient.close();
+        }
     }
 
     protected void handleAddType(RoutingContext context)
@@ -73,8 +115,23 @@ public class RestApiVerticle extends AbstractVerticle
 
         logger.info(String.format("Sending message on event bus for result '%s'", result.getId().toString()));
 
-        EventBus eventBus = getVertx().eventBus();
-        eventBus.send("message.handle", output);
+        StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
+            if (ar.succeeded())
+            {
+                StompClientConnection connection = ar.result();
+
+                connection.send(StompUtils.WORKER_QUEUE, Buffer.buffer(output.encode()));
+                logger.info(String.format("Message for result '%s' sent over stomp", result.getId()));
+                connection.disconnect();
+            }
+            else
+            {
+                logger.severe(String.format("Failed to connect to stomp server: %s", ar.cause().toString()));
+            }
+        });
+
+        //EventBus eventBus = getVertx().eventBus();
+        //eventBus.send("message.handle", output);
     }
 
     protected void handleGetId(RoutingContext context)
