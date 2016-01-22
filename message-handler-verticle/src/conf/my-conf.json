@@ -1,5 +1,3 @@
 {
-  "name": "message-handler-verticle",
-  "stomp.user": "guest",
-  "stomp.pass": "guest"
+  "name": "message-handler-verticle"
 }

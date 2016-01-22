@@ -46,12 +46,16 @@ public class MessageHandlerVerticle extends AbstractVerticle
         });
 */
 
+        logger.info("Attempting to connect to stomp server");
+
         this.stompClient = StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
-            if (!ar.failed())
+            if (ar.succeeded())
             {
+                logger.info("Established connection to stomp server");
                 StompClientConnection connection = ar.result();
 
                 connection.errorHandler(frame -> logger.severe(String.format("Error receiving Stomp frame from RabbitMQ: %s", frame)));
+                connection.connectionDroppedHandler(frame -> logger.severe(String.format("Dropped Stomp connection from RabbitMQ: %s", frame)));
 
                 connection.subscribe(StompUtils.WORKER_QUEUE, frame -> {
                     Result result = Json.decodeValue(frame.getBodyAsString(), Result.class);

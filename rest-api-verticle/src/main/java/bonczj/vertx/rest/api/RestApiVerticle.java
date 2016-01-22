@@ -115,7 +115,7 @@ public class RestApiVerticle extends AbstractVerticle
 
         logger.info(String.format("Sending message on event bus for result '%s'", result.getId().toString()));
 
-        StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
+        this.stompClient.connect(ar -> {
             if (ar.succeeded())
             {
                 StompClientConnection connection = ar.result();
