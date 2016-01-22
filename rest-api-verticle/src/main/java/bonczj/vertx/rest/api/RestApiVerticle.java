@@ -41,24 +41,6 @@ public class RestApiVerticle extends AbstractVerticle
 
         getVertx().createHttpServer().requestHandler(router::accept).listen(8080);
 
-/*
-        getVertx().eventBus().consumer("result.message.handle", objectMessage -> {
-            JsonObject object = (JsonObject) objectMessage.body();
-            Result result = Json.decodeValue(object.encode(), Result.class);
-            logger.info(String.format("Processing result %s with status %s", result.getId(), result.getStatus()));
-
-            if (getResultsCache().containsKey(result.getId()))
-            {
-                getResultsCache().put(result.getId(), result);
-                logger.info(String.format("Stored result %s in cache", result.getId()));
-            }
-            else
-            {
-                logger.severe(String.format("Failed to find result %s in cache", result.getId()));
-            }
-        });
-*/
-
         this.stompClient = StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
             if (ar.succeeded())
             {
@@ -129,9 +111,6 @@ public class RestApiVerticle extends AbstractVerticle
                 logger.severe(String.format("Failed to connect to stomp server: %s", ar.cause().toString()));
             }
         });
-
-        //EventBus eventBus = getVertx().eventBus();
-        //eventBus.send("message.handle", output);
     }
 
     protected void handleGetId(RoutingContext context)

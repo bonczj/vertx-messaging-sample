@@ -22,30 +22,6 @@ public class MessageHandlerVerticle extends AbstractVerticle
     {
         super.start();
 
-/*
-        getVertx().eventBus().consumer("message.handle", objectMessage -> {
-            JsonObject object = (JsonObject) objectMessage.body();
-            Result result = Json.decodeValue(object.encode(), Result.class);
-
-            logger.info(String.format("Processing message %s", result.getId().toString()));
-            result.setStatus(Status.RUNNING);
-            sendResult(result);
-
-            Random random = new Random();
-            int seconds = random.nextInt(20) + 1;
-
-            getVertx().setTimer(seconds * 1000, handler -> {
-                result.setStatus(Status.COMPLETED);
-                result.setResult(String.format("Message complete in %d seconds!", seconds));
-                logger.info(String.format("Message %s complete in %d seconds", result.getId(), seconds));
-
-                sendResult(result);
-
-                logger.info(String.format("Response sent to result.message.handle for result %s", result.getId()));
-            });
-        });
-*/
-
         logger.info("Attempting to connect to stomp server");
 
         this.stompClient = StompClient.create(getVertx(), StompUtils.stompClientOptions(config())).connect(ar -> {
@@ -100,12 +76,4 @@ public class MessageHandlerVerticle extends AbstractVerticle
     {
         connection.send(StompUtils.RESULTS_QUEUE, Buffer.buffer(Json.encode(result)));
     }
-
-/*
-    private void sendResult(Result result)
-    {
-        getVertx().eventBus().send("result.message.handle", new JsonObject(Json.encode(result)));
-    }
-*/
-
 }
